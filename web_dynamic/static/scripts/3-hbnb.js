@@ -1,51 +1,62 @@
 $(document).ready(function () {
-    // Function to create a Place article tag
-    function createPlaceArticle(place) {
-        const article = $('<article>');
+    const listCheck = {};
+    $('li input[type="checkbox"]').change(function () {
+        if ($(this).is(':checked')) {
+            listCheck[$(this).data('id')] = $(this).data('name');
+        } else {
+            delete listCheck[$(this).data('id')];
+        }
+        const values = Object.values(listCheck);
+        const list = values.join(', ');
+        const short = list.slice(0, 30);
+        $('.amenities h4').text(short + '...');
+        if (values.length === 0) $('.amenities h4').html('&nbsp;');
+    });
 
-        const titleBox = $('<div class="title_box">');
-        titleBox.append(`<h2>${place.name}</h2>`);
-        titleBox.append(`<div class="price_by_night">$${place.price_by_night}</div>`);
+    const url = 'http://127.0.0.1:5001/api/v1/status/';
+    $.get(url, function (info) {
+        if (info.status === 'OK') {
+            $('#api_status').addClass('available');
+        } else {
+            $('#api_status').removeClass('available');
+        }
+    });
 
-        const information = $('<div class="information">');
-        information.append(`<div class="max_guest">${place.max_guest} Guest${place.max_guest !== 1 ? 's' : ''}</div>`);
-        information.append(`<div class="number_rooms">${place.number_rooms} Bedroom${place.number_rooms !== 1 ? 's' : ''}</div>`);
-        information.append(`<div class="number_bathrooms">${place.number_bathrooms} Bathroom${place.number_bathrooms !== 1 ? 's' : ''}</div>`);
+    $.ajax({
+        type: 'POST',
+        url: 'http://127.0.0.1:5001/api/v1/places_search/',
+        data: '{}',
+        dataType: 'json',
+        contentType: 'application/json',
+        success: function (places) {
+            places.forEach(place => {
+                const s = (place.max_guest !== 1) ? 's' : '';
+                const s2 = (place.number_rooms !== 1) ? 's' : '';
+                const s3 = (place.number_bathrooms !== 1) ? 's' : '';
+                const html = `<article>
+          <div class="title_box">
+            <h2>${place.name}</h2>
+            <div class="price_by_night">$${place.price_by_night}</div>
+          </div>
+          <div class="information">
+            <div class="max_guest">${place.max_guest} Guest${s}</div>
+            <div class="number_rooms">${place.number_rooms}
+              Bedroom${s2}</div>
+            <div class="number_bathrooms">${place.number_bathrooms}
+              Bathroom${s3}</div>
+          </div>
+          <div class="user">
+            
+          </div>
+          <div class="description">
+            ${place.description}
+          </div>
+        </article>`;
+                $('.places').append(html);
+            });
+        }
+    });
+    /* */
 
-        const description = $('<div class="description">');
-        description.append(`${place.description}`);
-
-        article.append(titleBox);
-        article.append(information);
-        article.append(description);
-
-        return article;
-    }
-
-    // Function to update the places section with results
-    function updatePlacesSection(places) {
-        const placesSection = $('.places');
-        placesSection.empty();
-
-        places.forEach(function (place) {
-            const article = createPlaceArticle(place);
-            placesSection.append(article);
-        });
-    }
-
-    // Send a POST request to fetch places data
-    fetch('http://0.0.0.0:5001/api/v1/places_search/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({})
-    })
-        .then(response => response.json())
-        .then(data => {
-            updatePlacesSection(data);
-        })
-        .catch(error => {
-            console.error('Error fetching places data:', error);
-        });
+    /* End Show places dynamic mode */
 });
